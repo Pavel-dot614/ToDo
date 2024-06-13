@@ -16,6 +16,11 @@
                 <input id="new" type="text" placeholder="Новая задача">
                 <div id="add" class="todo__add">+</div>
             </div> 
+            <label htmlFor='all' class='check'>
+                <input id='all' type="checkbox"  class='check-input main-checkbox' />
+                <span class='check-box' >
+                <span class='text'>Check all todos</span>
+            </label>
             <div class="todo__tasks-count">
                 <span>Всего задач:</span>
                 <strong id="count">0</strong>
@@ -27,6 +32,9 @@
         <button class="button">All</button>
         <button class="button">Active</button>
         <button class="button">Completed</button>
+    </div>
+    <div class="todo__delete-complete">
+        <button>Delete completed</button>
     </div>
         </div>
  <script src="index.js"></script>

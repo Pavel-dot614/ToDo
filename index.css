@@ -136,3 +136,8 @@ line-height: calc(var(--size) * 0.88);
         border-radius: 8px;
    
 }
+
+.todo__delete-complete{
+    text-align: center;
+    
+}
