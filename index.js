@@ -4,8 +4,8 @@ const add = document.getElementById("add");
 const tasksText = document.getElementById("tasks");
 const count = document.getElementById("count");
 const allCheckBox = document.querySelector('.main-checkbox');
-const otherCheckBoxes = document.querySelectorAll('.other-checkbox')
-const delAllTasks = document.querySelector('.todo__delete-complete')
+const otherCheckBoxes = document.querySelectorAll('.other-checkbox');
+const delAllTasks = document.querySelector('.todo__delete-complete');
 
 const tasks = [];
 
@@ -16,10 +16,6 @@ function createTask() {
         newTask.value = "";
         tasksRender(tasks);
     }
-}
-
-function renderTasksCount(list) {
-    count.innerHTML = list.length;
 }
 
 function createTaskOnButton(event) {
@@ -35,6 +31,11 @@ function createTaskOnButton(event) {
     }
 }
 
+function renderTasksCount(list) {
+    count.innerHTML = list.length;
+}
+
+
 function addTask(text, list) {
     const task = {
         id: Date.now(),
@@ -42,7 +43,7 @@ function addTask(text, list) {
         isComplete: false,
     };
     list.push(task);
-    console.log(tasks);
+
 }
 
 function isNotHaveTask(text, list) {
@@ -92,8 +93,9 @@ function changeTaskStatus(id, list) {
 
 function checkAllTodo(list) {
     list.forEach((task) => {
-        task.isComplete = !task.isComplete
+            task.isComplete = !task.isComplete
     })
+
 };
 
 function toggleStatus(event) {
@@ -101,6 +103,7 @@ function toggleStatus(event) {
     const isCheckboxEl = target.classList.contains("todo__checkbox-div");
     const isDeleteEl = target.classList.contains("todo__task-del");
     const isMainCheckbox = target.classList.contains('main-checkbox');
+    const isAllDelTasks = target.classList.contains('del-all-task');
     if (isCheckboxEl) {
         const task = target.parentElement.parentElement;
         const taskId = task.getAttribute("id");
@@ -119,6 +122,10 @@ function toggleStatus(event) {
         checkAllTodo(tasks);
         tasksRender(tasks);
     }
+    if (isAllDelTasks) {
+        delAllCheckedTask(tasks);
+        tasksRender(tasks);
+    }
 
 }
 
@@ -131,18 +138,26 @@ function deleteTask(id, list) {
     });
 }
 
-// function deleteCompletedTasks(list) {
-//     list.forEach((task, ind) => {
-//         if (task.isComplete = true) {
-//             list.splice(task.filter(item) => );
-//         }
-//     })
-// }
-// delAllTasks.addEventListener('click', deleteCompletedTasks(this.isComplete, tasks))
+function delAllCheckedTask(appendBox) {
+    const items = document.getElementById(appendBox).querySelectorAll('.todo__task todo__task_complete');
+    items.forEach(item => item.closest('.todo__task todo__task_complete').remove());
+    console.log('qq')
+}
+
+// let task = document.createElement('span');
+// 		task.classList.add('task');
+// 		task.textContent = this.value;
+// 		task.addEventListener('dblclick', function() {
+// 			let text = this.textContent;
+// 			this.textContent = '';
+
+delAllTasks.addEventListener('click', toggleStatus)
 add.addEventListener("click", createTask);
 tasksText.addEventListener("click", toggleStatus);
 document.addEventListener("keydown", createTaskOnButton);
-
+tasksText.addEventListener('dblclick', function () {
+    console.log('dblclick')
+})
 
 allCheckBox.addEventListener('click', toggleStatus)
 
