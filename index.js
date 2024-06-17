@@ -9,32 +9,41 @@ const delAllTasks = document.querySelector('.todo__delete-complete');
 
 const tasks = [];
 
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '№': '&#8470;',
+        '%': '&#37;',
+        ':': '&#58;',
+        '?': '&#63;',
+        '*': '&#42;',
+    };
+    return text.replace(/[&<>"'№%:?*]/g, function(m) { return map[m]; });
+}
+
 function createTask() {
-    const newTaskText = newTask.value.trim();
-    if (newTaskText && isNotHaveTask(newTaskText, tasks)) {
+    const newTaskText = escapeHtml(newTask.value.trim());
+    if (newTaskText && isValidTask(newTaskText, tasks)) {
         addTask(newTaskText, tasks);
         newTask.value = "";
         tasksRender(tasks);
+        allCheckBox.checked = false; 
     }
 }
 
 function createTaskOnButton(event) {
-    const newTaskText = newTask.value.trim();
-    if (
-        event.key === "Enter" &&
-        isNotHaveTask(newTaskText, tasks) &&
-        newTaskText
-    ) {
-        addTask(newTaskText, tasks);
-        newTask.value = "";
-        tasksRender(tasks);
+    if (event.key === "Enter") {
+        createTask();
     }
 }
 
 function renderTasksCount(list) {
-    count.innerHTML = list.length;
+    count.textContent = list.length;
 }
-
 
 function addTask(text, list) {
     const task = {
@@ -46,16 +55,48 @@ function addTask(text, list) {
 
 }
 
-function isNotHaveTask(text, list) {
-    let isNotHave = true;
-    list.forEach((task) => {
-        if (task.text === text) {
-            alert("Задача уже существует");
-            isNotHave = false;
+function isValidTask(text, list) {
+   return !list.some(task => task.text === text)
+}
+
+function editTaskText(event) {
+    const taskTextElement = event.target;
+    const taskElement = taskTextElement.closest('.todo__task');
+    const editInputElement = taskElement.querySelector('.todo__edit-input');
+    const originalText = taskTextElement.textContent.trim();
+
+    taskTextElement.style.display = 'none';
+    editInputElement.style.display = 'block';
+    editInputElement.value = originalText;
+    editInputElement.focus();
+
+    function saveChanges() {
+        const newText = escapeHtml(editInputElement.value.trim());
+        if (newText !== "" && newText !== originalText) {
+            const taskId = taskElement.id;
+            const task = tasks.find(task => task.id === Number(taskId));
+            if (task) {
+                task.text = newText;
+                tasksRender(tasks);
+            }
+        }
+
+        editInputElement.style.display = 'none';
+        taskTextElement.style.display = 'block';
+        taskTextElement.textContent = newText !== "" ? newText : originalText;
+    }
+
+    editInputElement.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            saveChanges();
+        } else if (event.key === 'Escape') {
+            tasksRender(tasks)
         }
     });
-    return isNotHave;
+
+    editInputElement.addEventListener('blur', saveChanges);
 }
+
 
 function tasksRender(list) {
     let listHTML = "";
@@ -66,99 +107,99 @@ function tasksRender(list) {
             : "todo__task";
         const checked = task.isComplete ? "checked" : "";
         const taskHTML = `
-    <div id='${task.id}' class="${cls}">
-                    <label class="todo__checkbox"> 
-                     <input type="checkbox" ${checked} class="other-checkbox">
-                     <div class="todo__checkbox-div"></div>
-                 </label>
-                 <div class="todo__task-text">${task.text}</div>
-                 <div class="todo__task-del">-</div>
-                 </div>`;
+            <div id='${task.id}' class="${cls}">
+                <label class="todo__checkbox"> 
+                    <input type="checkbox" ${checked} class="other-checkbox">
+                    <div class="todo__checkbox-div"></div>
+                </label>
+                <div class="todo__task-text">
+                    ${task.text}
+                </div>
+                <input type="text" class="todo__edit-input" style="display: none;">
+                <div class="todo__task-del">-</div>
+            </div>`;
 
         listHTML += taskHTML;
     });
     tasksText.innerHTML = listHTML;
-
-
     renderTasksCount(list);
+    addEditTaskTextListeners()
 }
 
 function changeTaskStatus(id, list) {
-    list.forEach((task) => {
-        if (task.id === Number(id)) {
-            task.isComplete = !task.isComplete;
-        }
-    });
+    const task = list.find(task => task.id === Number(id));
+    if (task) {
+        task.isComplete = !task.isComplete;
+        updateMainCheckboxState();
+        tasksRender(list);
+    }
 }
 
-function checkAllTodo(list) {
-    list.forEach((task) => {
-            task.isComplete = !task.isComplete
-    })
+function updateMainCheckboxState() {
+    const allComplete = tasks.length > 0 && tasks.every(task => task.isComplete);
+    allCheckBox.checked = allComplete;
+}
 
-};
+function checkAllTodo() {
+    const allComplete = allCheckBox.checked;
 
-function toggleStatus(event) {
+    tasks.forEach(task => {
+        if (allComplete) {
+            if (!task.isComplete) {
+                task.isComplete = true;
+            }
+        } else {
+            if (task.isComplete) {
+                task.isComplete = false;
+            }
+        }
+    });
+
+    tasksRender(tasks);
+}
+
+function deleteTask(id) {
+    const index = tasks.findIndex(task => task.id === Number(id));
+    if (index !== -1) {
+        tasks.splice(index, 1);
+        tasksRender(tasks);
+    }
+}
+
+function deleteCompletedTasks() {
+    const filteredTasks = tasks.filter(task => !task.isComplete);
+    tasks.length = 0; 
+    tasks.push(...filteredTasks); 
+    tasksRender(tasks);
+}
+
+function changeOrDel(event) {
     const target = event.target;
-    const isCheckboxEl = target.classList.contains("todo__checkbox-div");
-    const isDeleteEl = target.classList.contains("todo__task-del");
-    const isMainCheckbox = target.classList.contains('main-checkbox');
-    const isAllDelTasks = target.classList.contains('del-all-task');
-    if (isCheckboxEl) {
-        const task = target.parentElement.parentElement;
-        const taskId = task.getAttribute("id");
-        changeTaskStatus(taskId, tasks);
-        tasksRender(tasks);
-    }
-    if (isDeleteEl) {
-        const task = target.parentElement;
-        const taskId = task.getAttribute("id");
-        deleteTask(taskId, tasks);
-        tasksRender(tasks);
-    }
-    if (isMainCheckbox) {
-        // const task = target.parentElement.parentElement;
-        // const taskId = task.getAttribute("id");
-        checkAllTodo(tasks);
-        tasksRender(tasks);
-    }
-    if (isAllDelTasks) {
-        delAllCheckedTask(tasks);
-        tasksRender(tasks);
-    }
+    const taskElement = target.closest('.todo__task');
+    const taskId = taskElement ? taskElement.id : null;
 
+    if (taskId) {
+        switch (true) {
+            case target.classList.contains('todo__checkbox-div'):
+                changeTaskStatus(taskId, tasks);
+                break;
+            case target.classList.contains('todo__task-del'):
+                deleteTask(taskId);
+                break;
+        }
+    }
 }
 
-
-function deleteTask(id, list) {
-    list.forEach((task, idx) => {
-        if (task.id == id) {
-            list.splice(idx, 1);
-        }
+function addEditTaskTextListeners() {
+    document.querySelectorAll('.todo__task-text').forEach(element => {
+        element.addEventListener('dblclick', editTaskText);
     });
 }
 
-function delAllCheckedTask(appendBox) {
-    const items = document.getElementById(appendBox).querySelectorAll('.todo__task todo__task_complete');
-    items.forEach(item => item.closest('.todo__task todo__task_complete').remove());
-    console.log('qq')
-}
-
-// let task = document.createElement('span');
-// 		task.classList.add('task');
-// 		task.textContent = this.value;
-// 		task.addEventListener('dblclick', function() {
-// 			let text = this.textContent;
-// 			this.textContent = '';
-
-delAllTasks.addEventListener('click', toggleStatus)
 add.addEventListener("click", createTask);
-tasksText.addEventListener("click", toggleStatus);
-document.addEventListener("keydown", createTaskOnButton);
-tasksText.addEventListener('dblclick', function () {
-    console.log('dblclick')
-})
-
-allCheckBox.addEventListener('click', toggleStatus)
+newTask.addEventListener("keydown", createTaskOnButton);
+tasksText.addEventListener('click', changeOrDel)
+allCheckBox.addEventListener('click', checkAllTodo);
+delAllTasks.addEventListener('click', deleteCompletedTasks);
 
 
