@@ -1,14 +1,15 @@
-:root{
+:root {
     --accent: #EA5959;
     --default: rgba(0, 0, 0, 0.3);
 
 }
-*{
+
+* {
     margin: 0;
     box-sizing: border-box;
 }
 
-body{
+body {
     background-color: var(--accent);
     height: 100vh;
     display: flex;
@@ -19,28 +20,21 @@ body{
 
 }
 
-.todo{
+.todo {
     padding: 32px;
     background-color: #afff;
     width: 90vw;
     border-radius: 16px;
 }
 
-.todo__content{
-
-}
-
-.todo__title{
-  
-}
-
-.todo__new{
+.todo__new {
     --size: 50px;
     display: flex;
     margin: 16px 0 32px;
 
 }
-.todo__new input{
+
+.todo__new input {
     margin-right: 16px;
     font-size: 18px;
     padding: 8px 16px;
@@ -49,8 +43,9 @@ body{
     border-radius: 5px;
     flex-grow: 1;
 }
+
 .todo__add,
-.todo__task-del{
+.todo__task-del {
     cursor: pointer;
     text-align: center;
     line-height: calc(var(--size) * 0.95);
@@ -63,37 +58,45 @@ body{
     color: white;
 }
 
-.todo__list > *:not(:last-child){
-margin-bottom: 8px;
+.todo__list>*:not(:last-child) {
+    margin-bottom: 8px;
 }
-.todo__task{
+
+.todo__task {
     cursor: default;
     --size: 36px;
     display: flex;
     min-height: var(--size);
     align-items: center;
-    
+
 }
-.todo__task:hover .todo__task-del{
+
+.todo__task:hover .todo__task-del {
     display: block;
 }
-.todo__task_complete .todo__task-text{
- text-decoration: line-through;
- color: var(--default);
+
+.todo__task_complete .todo__task-text {
+    text-decoration: line-through;
+    color: var(--default);
 }
-.todo__checkbox{
-margin-right: 16px;
+
+.todo__checkbox {
+    margin-right: 16px;
 }
-.todo__checkbox input{
+
+.todo__checkbox input {
     display: none;
 }
-.todo__checkbox input:checked + div{
-  background-color: var(--accent);
+
+.todo__checkbox input:checked+div {
+    background-color: var(--accent);
 }
-.todo__checkbox input:checked + div::after{
+
+.todo__checkbox input:checked+div::after {
     display: block;
-  }
-.todo__checkbox div{
+}
+
+.todo__checkbox div {
     --size: 28px;
     cursor: pointer;
     height: var(--size);
@@ -103,41 +106,45 @@ margin-right: 16px;
     position: relative;
     color: white;
 }
-.todo__checkbox div::after{
+
+.todo__checkbox div::after {
 
     text-align: center;
-content: '\2714';
-display: none;
-position: absolute;
-top: 0;
-left: 0;
-right: 0;
-bottom: 0;
-}
-.todo__task-text{
-font-size: 20px;
-}
-.todo__task-del{
-    
+    content: '\2714';
     display: none;
-margin-left: auto;
-margin-right: 0;
-font-size: 44px;
-line-height: calc(var(--size) * 0.88);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
+
+.todo__task-text {
+    font-size: 20px;
+}
+
+.todo__task-del {
+
+    display: none;
+    margin-left: auto;
+    margin-right: 0;
+    font-size: 44px;
+    line-height: calc(var(--size) * 0.88);
+}
+
 .todo__buttons {
     text-align: center;
 
     bottom: 100%
-    
-    }
-    .button{
-        cursor: pointer;
-        border-radius: 8px;
-   
 }
 
-.todo__delete-complete{
+.button {
+    cursor: pointer;
+    border-radius: 8px;
+
+}
+
+.todo__delete-complete {
     text-align: center;
-    
+
 }

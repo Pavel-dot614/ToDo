@@ -28,10 +28,11 @@
              <div id="tasks" class="todo__list">
         </div>
     <div class="todo__buttons">
-        <button class="button">All</button>
-        <button class="button">Active</button>
-        <button class="button">Completed</button>
+        <button id="btn-all" type="button" class="btn btn-outline-secondary"><span id="allCount">All (0)</span></button>
+        <button id="btn-active" type="button" class="btn btn-outline-secondary">Active <span id="activeCount">(0)</span></button>
+        <button id="btn-completed" type="button" class="btn btn-outline-secondary">Completed <span id="completedCount">(0)</span></button>
     </div>
+    <div class="pagination"></div>
     <div class="todo__delete-complete">
         <button class="del-all-task">Delete completed</button>
     </div>

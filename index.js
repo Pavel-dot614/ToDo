@@ -6,23 +6,21 @@ const count = document.getElementById("count");
 const allCheckBox = document.querySelector('.main-checkbox');
 const otherCheckBoxes = document.querySelectorAll('.other-checkbox');
 const delAllTasks = document.querySelector('.todo__delete-complete');
+const allCompleteTasks = document.getElementById('btn-all');
+const activeTask = document.getElementById('btn-active');
+const completedTask = document.getElementById('btn-completed');
+const todoButtons = document.querySelector('.todo__buttons');
+const paginationContainer = document.querySelector('.pagination');
 
 const tasks = [];
+let filterType = "all";
+let currentPage = 1;
+const tasksPerPage = 5;
+
 
 function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-        '№': '&#8470;',
-        '%': '&#37;',
-        ':': '&#58;',
-        '?': '&#63;',
-        '*': '&#42;',
-    };
-    return text.replace(/[&<>"'№%:?*]/g, function(m) { return map[m]; });
+
+    return text.replace(/[&<>"'№%:?*]/g, '');
 }
 
 function createTask() {
@@ -31,7 +29,7 @@ function createTask() {
         addTask(newTaskText, tasks);
         newTask.value = "";
         tasksRender(tasks);
-        allCheckBox.checked = false; 
+        allCheckBox.checked = false;
     }
 }
 
@@ -43,6 +41,11 @@ function createTaskOnButton(event) {
 
 function renderTasksCount(list) {
     count.textContent = list.length;
+    const completedCount = list.filter(task => task.isComplete).length;
+    const incompleteCount = list.filter(task => !task.isComplete).length;
+    allCompleteTasks.textContent = `All (${list.length})`;
+    activeTask.textContent = `Active (${incompleteCount})`;
+    completedTask.textContent = `Completed (${completedCount})`;
 }
 
 function addTask(text, list) {
@@ -56,7 +59,7 @@ function addTask(text, list) {
 }
 
 function isValidTask(text, list) {
-   return !list.some(task => task.text === text)
+    return !list.some(task => task.text === text)
 }
 
 function editTaskText(event) {
@@ -86,7 +89,7 @@ function editTaskText(event) {
         taskTextElement.textContent = newText !== "" ? newText : originalText;
     }
 
-    editInputElement.addEventListener('keydown', function(event) {
+    editInputElement.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
             saveChanges();
         } else if (event.key === 'Escape') {
@@ -99,9 +102,23 @@ function editTaskText(event) {
 
 
 function tasksRender(list) {
-    let listHTML = "";
+    let filteredTasks = list;
+    switch (filterType) {
+        case 'active':
+            filteredTasks = list.filter(task => !task.isComplete);
+            break;
+        case 'completed':
+            filteredTasks = list.filter(task => task.isComplete);
+            break;
+    }
 
-    list.forEach((task) => {
+
+    const start = (currentPage - 1) * tasksPerPage;
+    const end = start + tasksPerPage;
+    const tasksToDisplay = filteredTasks.slice(start, end);
+
+    let listHTML = "";
+    tasksToDisplay.forEach((task) => {
         const cls = task.isComplete
             ? "todo__task todo__task_complete"
             : "todo__task";
@@ -123,21 +140,40 @@ function tasksRender(list) {
     });
     tasksText.innerHTML = listHTML;
     renderTasksCount(list);
-    addEditTaskTextListeners()
+    addEditTaskTextListeners();
+    updatePaginationControls(filteredTasks.length);
+}
+
+function updatePaginationControls(totalTasks) {
+    const totalPages = Math.ceil(totalTasks / tasksPerPage);
+
+    paginationContainer.innerHTML = '';
+
+    for (let i = 1; i <= totalPages; i++) {
+        const pageNumber = document.createElement('button');
+        pageNumber.textContent = i;
+        pageNumber.classList.add('page-number');
+        if (i === currentPage) {
+            pageNumber.classList.add('active');
+        }
+        pageNumber.addEventListener('click', () => goToPage(i));
+        paginationContainer.appendChild(pageNumber);
+    }
+}
+
+function goToPage(page) {
+    currentPage = page;
+    tasksRender(tasks);
 }
 
 function changeTaskStatus(id, list) {
     const task = list.find(task => task.id === Number(id));
     if (task) {
         task.isComplete = !task.isComplete;
-        updateMainCheckboxState();
+        const allComplete = tasks.length > 0 && tasks.every(task => task.isComplete);
+        allCheckBox.checked = allComplete;
         tasksRender(list);
     }
-}
-
-function updateMainCheckboxState() {
-    const allComplete = tasks.length > 0 && tasks.every(task => task.isComplete);
-    allCheckBox.checked = allComplete;
 }
 
 function checkAllTodo() {
@@ -168,8 +204,8 @@ function deleteTask(id) {
 
 function deleteCompletedTasks() {
     const filteredTasks = tasks.filter(task => !task.isComplete);
-    tasks.length = 0; 
-    tasks.push(...filteredTasks); 
+    tasks.length = 0;
+    tasks.push(...filteredTasks);
     tasksRender(tasks);
 }
 
@@ -190,16 +226,37 @@ function changeOrDel(event) {
     }
 }
 
+function setFilter(type) {
+    switch (type) {
+        case 'all':
+            filterType = 'all';
+            break;
+        case 'active':
+            filterType = 'active';
+            break;
+        case 'completed':
+            filterType = 'completed';
+            break;
+
+    }
+
+    tasksRender(tasks);
+}
+
+
+
+
 function addEditTaskTextListeners() {
     document.querySelectorAll('.todo__task-text').forEach(element => {
         element.addEventListener('dblclick', editTaskText);
     });
 }
-
 add.addEventListener("click", createTask);
 newTask.addEventListener("keydown", createTaskOnButton);
 tasksText.addEventListener('click', changeOrDel)
 allCheckBox.addEventListener('click', checkAllTodo);
 delAllTasks.addEventListener('click', deleteCompletedTasks);
-
+allCompleteTasks.addEventListener("click", () => setFilter("all"));
+activeTask.addEventListener("click", () => setFilter("active"));
+completedTask.addEventListener("click", () => setFilter("completed"));
 
