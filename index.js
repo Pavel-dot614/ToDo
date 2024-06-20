@@ -1,16 +1,16 @@
 
+(() => {
 const newTask = document.getElementById("new");
 const add = document.getElementById("add");
 const tasksText = document.getElementById("tasks");
 const count = document.getElementById("count");
 const allCheckBox = document.querySelector('.main-checkbox');
-const otherCheckBoxes = document.querySelectorAll('.other-checkbox');
 const delAllTasks = document.querySelector('.todo__delete-complete');
 const allCompleteTasks = document.getElementById('btn-all');
 const activeTask = document.getElementById('btn-active');
 const completedTask = document.getElementById('btn-completed');
-const todoButtons = document.querySelector('.todo__buttons');
 const paginationContainer = document.querySelector('.pagination');
+
 
 const tasks = [];
 let filterType = "all";
@@ -18,13 +18,9 @@ let currentPage = 1;
 const tasksPerPage = 5;
 
 
-function escapeHtml(text) {
-
-    return text.replace(/[&<>"'№%:?*]/g, '');
-}
 
 function createTask() {
-    const newTaskText = escapeHtml(newTask.value.trim());
+    const newTaskText = _.escape(newTask.value.trim().substr(0, 20));
     if (newTaskText && isValidTask(newTaskText, tasks)) {
         addTask(newTaskText, tasks);
         newTask.value = "";
@@ -73,32 +69,37 @@ function editTaskText(event) {
     editInputElement.value = originalText;
     editInputElement.focus();
 
-    function saveChanges() {
-        const newText = escapeHtml(editInputElement.value.trim());
-        if (newText !== "" && newText !== originalText) {
-            const taskId = taskElement.id;
-            const task = tasks.find(task => task.id === Number(taskId));
-            if (task) {
-                task.text = newText;
-                tasksRender(tasks);
-            }
-        }
+    editInputElement.addEventListener('keydown', handleEditKeyDown);
+    editInputElement.addEventListener('blur', saveTaskChanges);
 
+    function handleEditKeyDown(event) {
+        switch (event.key) {
+            case 'Enter':
+                saveTaskChanges();
+                break;
+            case 'Escape':
+                tasksRender(tasks);
+        }
+    }
+
+    function updateTaskText(taskId, newText) {
+        const task = tasks.find(task => task.id === Number(taskId));
+        if (task) {
+            task.text = newText;
+        }
+    }
+    function saveTaskChanges() {
+        const newText = _.escape(editInputElement.value.trim().substr(0, 20));
+        if (newText !== "" && newText !== originalText) {
+            updateTaskText(taskElement.id, newText);
+            tasksRender(tasks);
+        }
         editInputElement.style.display = 'none';
         taskTextElement.style.display = 'block';
         taskTextElement.textContent = newText !== "" ? newText : originalText;
     }
-
-    editInputElement.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            saveChanges();
-        } else if (event.key === 'Escape') {
-            tasksRender(tasks)
-        }
-    });
-
-    editInputElement.addEventListener('blur', saveChanges);
 }
+
 
 
 function tasksRender(list) {
@@ -156,8 +157,15 @@ function updatePaginationControls(totalTasks) {
         if (i === currentPage) {
             pageNumber.classList.add('active');
         }
-        pageNumber.addEventListener('click', () => goToPage(i));
         paginationContainer.appendChild(pageNumber);
+    }
+}
+
+function changePage(event){
+    const target = event.target;
+    if (target.classList.contains('page-number')) {
+        const page = Number(target.textContent);
+        goToPage(page);
     }
 }
 
@@ -180,15 +188,7 @@ function checkAllTodo() {
     const allComplete = allCheckBox.checked;
 
     tasks.forEach(task => {
-        if (allComplete) {
-            if (!task.isComplete) {
-                task.isComplete = true;
-            }
-        } else {
-            if (task.isComplete) {
-                task.isComplete = false;
-            }
-        }
+        task.isComplete = allComplete;
     });
 
     tasksRender(tasks);
@@ -198,6 +198,10 @@ function deleteTask(id) {
     const index = tasks.findIndex(task => task.id === Number(id));
     if (index !== -1) {
         tasks.splice(index, 1);
+        const totalPages = Math.ceil(tasks.length / tasksPerPage);
+        if (currentPage > totalPages) {
+            currentPage = totalPages; 
+        }
         tasksRender(tasks);
     }
 }
@@ -259,4 +263,5 @@ delAllTasks.addEventListener('click', deleteCompletedTasks);
 allCompleteTasks.addEventListener("click", () => setFilter("all"));
 activeTask.addEventListener("click", () => setFilter("active"));
 completedTask.addEventListener("click", () => setFilter("completed"));
-
+paginationContainer.addEventListener('click', changePage);
+})();
