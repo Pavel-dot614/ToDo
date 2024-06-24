@@ -10,7 +10,8 @@
     const activeTask = document.getElementById('btn-active');
     const completedTask = document.getElementById('btn-completed');
     const paginationContainer = document.querySelector('.pagination');
-
+    const filterButtons = document.querySelectorAll('.todo__buttons .button');
+    const toDoButtons = document.querySelector('.todo__buttons');
 
     const tasks = [];
     let filterType = "all";
@@ -18,16 +19,15 @@
     const tasksPerPage = 5;
     let escapePressed = false;
 
-
-
     function createTask() {
-        const newTaskText = _.escape(newTask.value.trim().substr(0, 20));
+        const newTaskText = newTask.value.trim();
         if (newTaskText && isValidTask(newTaskText, tasks)) {
             addTask(newTaskText, tasks);
             newTask.value = "";
             tasksRender(tasks);
             allCheckBox.checked = false;
         }
+        goToLastPage()
     }
 
     function createTaskOnButton(event) {
@@ -59,59 +59,59 @@
         return !list.some(task => task.text === text)
     }
 
+    function editTaskText(event) {
+        const taskTextElement = event.target;
+        const taskElement = taskTextElement.closest('.todo__task');
+        const editInputElement = document.createElement('input');
+        editInputElement.type = 'text';
+        editInputElement.maxLength = '20'
+        editInputElement.className = `${taskTextElement.parentElement.id}__todo__edit-input todo__edit-input`;
 
-function editTaskText(event) {
-    const taskTextElement = event.target;
-    const taskElement = taskTextElement.closest('.todo__task');
-    const editInputElement = document.createElement('input');
-    editInputElement.type = 'text';
-    editInputElement.className = `${taskTextElement.parentElement.id}__todo__edit-input todo__edit-input`;
-
-    const originalText = taskTextElement.textContent.trim();
-    taskTextElement.style.display = 'none';
-    editInputElement.value = originalText;
-    taskElement.insertBefore(editInputElement, taskTextElement);
-    editInputElement.focus();
-    addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText);
-}
-
-function addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText) {
-    const input = document.querySelector('.todo__edit-input');
-    const taskId = parseInt(input.className, 10);
-
-    editInputElement.addEventListener('keydown', (event) => handleEditKeyDown(event, input, taskId));
-    editInputElement.addEventListener('blur', () => handleBlur(input, taskId));
-}
-
-function handleEditKeyDown(event, input, taskId) {
-    switch (event.key) {
-        case 'Enter':
-            saveTaskText(input, taskId);
-            input.blur();
-            break;
-        case 'Escape':
-            escapePressed = true;
-            input.remove();
-            tasksRender(tasks);
-            break;
+        const originalText = taskTextElement.textContent.trim();
+        taskTextElement.style.display = 'none';
+        editInputElement.value = originalText;
+        taskElement.insertBefore(editInputElement, taskTextElement);
+        editInputElement.focus();
+        addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText);
     }
-}
 
-function handleBlur(input, taskId) {
-    if (!escapePressed) {
-        saveTaskText(input, taskId);
+    function addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText) {
+        const input = document.querySelector('.todo__edit-input');
+        const taskId = parseInt(input.className, 10);
+
+        editInputElement.addEventListener('keydown', (event) => handleEditKeyDown(event, input, taskId));
+        editInputElement.addEventListener('blur', () => handleBlur(input, taskId));
     }
-    escapePressed = false;  
-    tasksRender(tasks);
-}
 
-function saveTaskText(input, taskId) {
-    tasks.forEach((item) => {
-        if (item.id === taskId) {
-            item.text = input.value;
+    function handleEditKeyDown(event, input, taskId) {
+        switch (event.key) {
+            case 'Enter':
+                saveTaskText(input, taskId);
+                input.blur();
+                break;
+            case 'Escape':
+                escapePressed = true;
+                input.remove();
+                tasksRender(tasks);
+                break;
         }
-    });
-}
+    }
+
+    function handleBlur(input, taskId) {
+        if (!escapePressed) {
+            saveTaskText(input, taskId);
+        }
+        escapePressed = false;
+        tasksRender(tasks);
+    }
+
+    function saveTaskText(input, taskId) {
+        tasks.forEach((item) => {
+            if (item.id === taskId) {
+                item.text = input.value;
+            }
+        });
+    }
 
     function tasksRender(list) {
         let filteredTasks = list;
@@ -142,7 +142,7 @@ function saveTaskText(input, taskId) {
                     <div class="todo__checkbox-div"></div>
                 </label>
                 <div class="todo__task-text">
-                    ${task.text}
+                    ${_.escape(task.text)}
                 </div>           
                 <div class="todo__task-del">-</div>
             </div>`;
@@ -153,6 +153,7 @@ function saveTaskText(input, taskId) {
         renderTasksCount(list);
         addEditTaskTextListeners();
         updatePaginationControls(filteredTasks.length);
+        updateFilterButtons();
     }
 
     function updatePaginationControls(totalTasks) {
@@ -184,6 +185,13 @@ function saveTaskText(input, taskId) {
         tasksRender(tasks);
     }
 
+    function goToLastPage() {
+        const totalTasks = tasks.length;
+        const totalPages = Math.ceil(totalTasks / tasksPerPage);
+        currentPage = totalPages;
+        tasksRender(tasks);
+    }
+
     function changeTaskStatus(id, list) {
         const task = list.find(task => task.id === Number(id));
         if (task) {
@@ -204,6 +212,10 @@ function saveTaskText(input, taskId) {
         tasksRender(tasks);
     }
 
+    function updateCheckAllStatus() {
+        allCheckBox.checked = tasks.length > 0 && tasks.every(task => task.isComplete);
+    }
+
     function deleteTask(id) {
         const index = tasks.findIndex(task => task.id === Number(id));
         if (index !== -1) {
@@ -213,6 +225,7 @@ function saveTaskText(input, taskId) {
                 currentPage = totalPages;
             }
             tasksRender(tasks);
+            updateCheckAllStatus()
         }
     }
 
@@ -221,6 +234,7 @@ function saveTaskText(input, taskId) {
         tasks.length = 0;
         tasks.push(...filteredTasks);
         tasksRender(tasks);
+        updateCheckAllStatus()
     }
 
     function changeOrDel(event) {
@@ -241,24 +255,37 @@ function saveTaskText(input, taskId) {
     }
 
     function setFilter(type) {
-        switch (type) {
-            case 'all':
-                filterType = 'all';
-                break;
-            case 'active':
-                filterType = 'active';
-                break;
-            case 'completed':
-                filterType = 'completed';
-                break;
-
+        filterType = type;
+        if (filterType === 'completed' || filterType === 'active') {
+            currentPage = 1
         }
-
         tasksRender(tasks);
     }
 
+    function updateFilterButtons() {
+        filterButtons.forEach(button => {
+            button.classList.remove('active');
+        });
 
+        switch (filterType) {
+            case 'all':
+                document.querySelector('.button[data-filter="all"]').classList.add('active');
+                break;
+            case 'active':
+                document.querySelector('.button[data-filter="active"]').classList.add('active');
+                break;
+            case 'completed':
+                document.querySelector('.button[data-filter="completed"]').classList.add('active');
+                break;
+        }
+    }
 
+    function setDataFilter(event) {
+        if (event.target.classList.contains('button')) {
+            const filter = event.target.getAttribute('data-filter');
+            setFilter(filter);
+        }
+    }
 
     function addEditTaskTextListeners() {
         document.querySelectorAll('.todo__task-text').forEach(element => {
@@ -274,4 +301,5 @@ function saveTaskText(input, taskId) {
     activeTask.addEventListener("click", () => setFilter("active"));
     completedTask.addEventListener("click", () => setFilter("completed"));
     paginationContainer.addEventListener('click', changePage);
+    toDoButtons.addEventListener('click', setDataFilter);
 })();
