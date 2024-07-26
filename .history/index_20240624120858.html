@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo List</title>
+    <link rel="stylesheet" href="index.css">
+    <script defer src="index.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+</head>
+
+<body>
+    <div class="todo">
+        <div class="todo__content">
+            <h1 class="todo__title">Все задачи</h1>
+            <div class="todo__new">
+                <input id="new" type="text" placeholder="Новая задача">
+                <div id="add" class="todo__add">+</div>
+            </div> 
+            <label htmlFor='all' class='check'>
+                <input id='all' type="checkbox" maxlength="20"  class='check-input main-checkbox' />
+                <span class='check-box' >
+                <span class='text'>Check all todos</span>
+            </label>
+            <div class="todo__tasks-count">
+                <span>Всего задач:</span>
+                <strong id="count">0</strong>
+            </div>
+             <div id="tasks" class="todo__list">
+        </div>
+    <div class="todo__buttons">
+        <button id="btn-all" type="button" class="btn btn-outline-secondary"><span id="allCount">All (0)</span></button>
+        <button id="btn-active" type="button" class="btn btn-outline-secondary">Active <span id="activeCount">(0)</span></button>
+        <button id="btn-completed" type="button" class="btn btn-outline-secondary">Completed <span id="completedCount">(0)</span></button>
+    </div>
+    <div class="pagination"></div>
+    <div class="todo__delete-complete">
+        <button class="del-all-task">Delete completed</button>
+    </div>
+        </div>
+
+ 
+</body>
+
+</html>

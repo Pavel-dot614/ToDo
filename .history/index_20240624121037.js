@@ -1,3 +1,4 @@
+
 (() => {
     const newTask = document.getElementById("new");
     const add = document.getElementById("add");
@@ -9,8 +10,7 @@
     const activeTask = document.getElementById('btn-active');
     const completedTask = document.getElementById('btn-completed');
     const paginationContainer = document.querySelector('.pagination');
-    const filterButtons = document.querySelectorAll('.todo__buttons .button');
-    const toDoButtons = document.querySelector('.todo__buttons');
+
 
     const tasks = [];
     let filterType = "all";
@@ -18,31 +18,16 @@
     const tasksPerPage = 5;
     let escapePressed = false;
 
-    // GET /tasks
-    async function loadTasks() {
-        try {
-            const response = await fetch('http://localhost:3000/tasks', {
-                mode: 'cors',
-                method: 'GET'
-            });
-            const data = await response.json();
-            data.map(task => tasks.push(task));
-            tasksRender(tasks);
-        } catch (error) {
-            console.log(error, 'Ошибка загрузки');
-        }
-    }
 
-    // POST /tasks
-    async function createTask() {
-        const newTaskText = newTask.value.trim();
+
+    function createTask() {
+        const newTaskText = _.escape(newTask.value.trim());
         if (newTaskText && isValidTask(newTaskText, tasks)) {
-            await addTask(newTaskText);
+            addTask(newTaskText, tasks);
             newTask.value = "";
             tasksRender(tasks);
             allCheckBox.checked = false;
         }
-        goToLastPage()
     }
 
     function createTaskOnButton(event) {
@@ -60,98 +45,76 @@
         completedTask.textContent = `Completed (${completedCount})`;
     }
 
-    async function addTask(text) {
+    function addTask(text, list) {
         const task = {
-            text
+            id: Date.now(),
+            text,
+            isComplete: false,
         };
-        try {
-            const response = await fetch('http://localhost:3000/tasks', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(task),
-            });
-            const data = await response.json();
-            tasks.push(data);
-        } catch (error) {
-            console.error('Error adding task:', error);
-        }
+        list.push(task);
+
     }
 
     function isValidTask(text, list) {
         return !list.some(task => task.text === text)
     }
 
-   async function editTaskText(event) {
-        const taskTextElement = event.target;
-        const taskElement = taskTextElement.closest('.todo__task');
-        const editInputElement = document.createElement('input');
-        editInputElement.type = 'text';
-        editInputElement.maxLength = '20'
-        editInputElement.className = `${taskTextElement.parentElement.id}__todo__edit-input todo__edit-input`;
 
-        const originalText = taskTextElement.textContent.trim();
-        taskTextElement.style.display = 'none';
-        editInputElement.value = originalText;
-        taskElement.insertBefore(editInputElement, taskTextElement);
-        editInputElement.focus();
-        addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText);
-        try {
-            const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ text: editInputElement.value })
-            });
-            const updatedTask = await response.json();
-            Object.assign(tasks, updatedTask);
-        } catch (error) {
-            console.error('Error updating task:', error);
-        }
-    }
+function editTaskText(event) {
+    const taskTextElement = event.target;
+    const taskElement = taskTextElement.closest('.todo__task');
+    const editInputElement = document.createElement('input');
+    editInputElement.type = 'text';
+    editInputElement.maxLength = '20'
+    editInputElement.className = `${taskTextElement.parentElement.id}__todo__edit-input todo__edit-input`;
 
-    function addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText) {
-        const input = document.querySelector('.todo__edit-input');
-        const taskId = parseInt(input.className, 10);
+    const originalText = taskTextElement.textContent.trim();
+    taskTextElement.style.display = 'none';
+    editInputElement.value = originalText;
+    taskElement.insertBefore(editInputElement, taskTextElement);
+    editInputElement.focus();
+    addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText);
+}
 
-        editInputElement.addEventListener('keydown', (event) => handleEditKeyDown(event, input, taskId));
-        editInputElement.addEventListener('blur', () => handleBlur(input, taskId));
-    }
+function addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText) {
+    const input = document.querySelector('.todo__edit-input');
+    const taskId = parseInt(input.className, 10);
 
-    function handleEditKeyDown(event, input, taskId) {
-        switch (event.key) {
-            case 'Enter':
-                saveTaskText(input, taskId);
-                input.blur();
-                break;
-            case 'Escape':
-                escapePressed = true;
-                input.remove();
-                tasksRender(tasks);
-                break;
-        }
-    }
+    editInputElement.addEventListener('keydown', (event) => handleEditKeyDown(event, input, taskId));
+    editInputElement.addEventListener('blur', () => handleBlur(input, taskId));
+}
 
-    function handleBlur(input, taskId) {
-        if (!escapePressed) {
+function handleEditKeyDown(event, input, taskId) {
+    switch (event.key) {
+        case 'Enter':
             saveTaskText(input, taskId);
+            input.blur();
+            break;
+        case 'Escape':
+            escapePressed = true;
+            input.remove();
+            tasksRender(tasks);
+            break;
+    }
+}
+
+function handleBlur(input, taskId) {
+    if (!escapePressed) {
+        saveTaskText(input, taskId);
+    }
+    escapePressed = false;  
+    tasksRender(tasks);
+}
+
+function saveTaskText(input, taskId) {
+    tasks.forEach((item) => {
+        if (item.id === taskId) {
+            item.text = input.value;
         }
-        escapePressed = false;
-        tasksRender(tasks);
-    }
+    });
+}
 
-    function saveTaskText(input, taskId) {
-        tasks.forEach((item) => {
-            if (item.id === taskId) {
-                item.text = input.value;
-            }
-        });
-    }
-
-  
-    async function tasksRender(list) {
+    function tasksRender(list) {
         let filteredTasks = list;
         switch (filterType) {
             case 'active':
@@ -161,6 +124,7 @@
                 filteredTasks = list.filter(task => task.isComplete);
                 break;
         }
+
 
         const start = (currentPage - 1) * tasksPerPage;
         const end = start + tasksPerPage;
@@ -174,13 +138,13 @@
             const checked = task.isComplete ? "checked" : "";
             const taskHTML = `
             <div id='${task.id}' class="${cls}">
-                <label class="todo__checkbox">
+                <label class="todo__checkbox"> 
                     <input type="checkbox" ${checked} class="other-checkbox">
                     <div class="todo__checkbox-div"></div>
                 </label>
                 <div class="todo__task-text">
-                    ${_.escape(task.text)}
-                </div>
+                    ${task.text}
+                </div>           
                 <div class="todo__task-del">-</div>
             </div>`;
 
@@ -190,7 +154,6 @@
         renderTasksCount(list);
         addEditTaskTextListeners();
         updatePaginationControls(filteredTasks.length);
-        updateFilterButtons();
     }
 
     function updatePaginationControls(totalTasks) {
@@ -222,13 +185,6 @@
         tasksRender(tasks);
     }
 
-    function goToLastPage() {
-        const totalTasks = tasks.length;
-        const totalPages = Math.ceil(totalTasks / tasksPerPage);
-        currentPage = totalPages;
-        tasksRender(tasks);
-    }
-
     function changeTaskStatus(id, list) {
         const task = list.find(task => task.id === Number(id));
         if (task) {
@@ -249,33 +205,16 @@
         tasksRender(tasks);
     }
 
-    function updateCheckAllStatus() {
-        allCheckBox.checked = tasks.length > 0 && tasks.every(task => task.isComplete);
-    }
-
-    async function deleteTask(id) {
-        try {
-            const response = await fetch(`http://localhost:3000/tasks/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-            });
-            if (response.ok) {
-                const index = tasks.findIndex(task => task.id === Number(id));
-                if (index !== -1) {
-                    tasks.splice(index, 1);
-                    const totalPages = Math.ceil(tasks.length / tasksPerPage);
-                    if (currentPage > totalPages) {
-                        currentPage = totalPages;
-                    }
-                }
-                tasksRender(tasks);
+    function deleteTask(id) {
+        const index = tasks.findIndex(task => task.id === Number(id));
+        if (index !== -1) {
+            tasks.splice(index, 1);
+            const totalPages = Math.ceil(tasks.length / tasksPerPage);
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
             }
-        } catch (error) {
-            console.error('Error deleting task:', error);
+            tasksRender(tasks);
         }
-        updateCheckAllStatus();
     }
 
     function deleteCompletedTasks() {
@@ -283,7 +222,6 @@
         tasks.length = 0;
         tasks.push(...filteredTasks);
         tasksRender(tasks);
-        updateCheckAllStatus()
     }
 
     function changeOrDel(event) {
@@ -304,44 +242,30 @@
     }
 
     function setFilter(type) {
-        filterType = type;
-        if (filterType === 'completed' || filterType === 'active') {
-            currentPage = 1
+        switch (type) {
+            case 'all':
+                filterType = 'all';
+                break;
+            case 'active':
+                filterType = 'active';
+                break;
+            case 'completed':
+                filterType = 'completed';
+                break;
+
         }
+
         tasksRender(tasks);
     }
 
-    function updateFilterButtons() {
-        filterButtons.forEach(button => {
-            button.classList.remove('active');
-        });
 
-        switch (filterType) {
-            case 'all':
-                document.querySelector('.button[data-filter="all"]').classList.add('active');
-                break;
-            case 'active':
-                document.querySelector('.button[data-filter="active"]').classList.add('active');
-                break;
-            case 'completed':
-                document.querySelector('.button[data-filter="completed"]').classList.add('active');
-                break;
-        }
-    }
 
-    function setDataFilter(event) {
-        if (event.target.classList.contains('button')) {
-            const filter = event.target.getAttribute('data-filter');
-            setFilter(filter);
-        }
-    }
 
     function addEditTaskTextListeners() {
         document.querySelectorAll('.todo__task-text').forEach(element => {
             element.addEventListener('dblclick', editTaskText);
         });
     }
-
     add.addEventListener("click", createTask);
     newTask.addEventListener("keydown", createTaskOnButton);
     tasksText.addEventListener('click', changeOrDel)
@@ -351,6 +275,4 @@
     activeTask.addEventListener("click", () => setFilter("active"));
     completedTask.addEventListener("click", () => setFilter("completed"));
     paginationContainer.addEventListener('click', changePage);
-    toDoButtons.addEventListener('click', setDataFilter);
-    loadTasks()
 })();
