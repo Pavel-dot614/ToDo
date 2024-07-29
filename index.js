@@ -97,6 +97,9 @@
         taskElement.insertBefore(editInputElement, taskTextElement);
         editInputElement.focus();
         addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText);
+        const input = document.querySelector('.todo__edit-input');
+        const taskId = parseInt(input.className, 10);
+
         try {
             const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
                 method: 'PUT',
