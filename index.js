@@ -83,74 +83,72 @@
         return !list.some(task => task.text === text)
     }
 
-   async function editTaskText(event) {
+     function editTaskText(event) {
         const taskTextElement = event.target;
         const taskElement = taskTextElement.closest('.todo__task');
+        const taskId = parseInt(taskElement.id, 10);
+
         const editInputElement = document.createElement('input');
         editInputElement.type = 'text';
-        editInputElement.maxLength = '20'
-        editInputElement.className = `${taskTextElement.parentElement.id}__todo__edit-input todo__edit-input`;
+        editInputElement.maxLength = '20';
+        editInputElement.className = 'todo__edit-input';
 
         const originalText = taskTextElement.textContent.trim();
         taskTextElement.style.display = 'none';
         editInputElement.value = originalText;
         taskElement.insertBefore(editInputElement, taskTextElement);
         editInputElement.focus();
-        addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText);
-        const input = document.querySelector('.todo__edit-input');
-        const taskId = parseInt(input.className, 10);
 
-        try {
-            const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ text: editInputElement.value })
-            });
-            const updatedTask = await response.json();
-            Object.assign(tasks, updatedTask);
-        } catch (error) {
-            console.error('Error updating task:', error);
-        }
+        addEventListenersForEdit(editInputElement, taskTextElement, originalText, taskId);
     }
 
-    function addEventListenersForEdit(editInputElement, taskElement, taskTextElement, originalText) {
-        const input = document.querySelector('.todo__edit-input');
-        const taskId = parseInt(input.className, 10);
-
-        editInputElement.addEventListener('keydown', (event) => handleEditKeyDown(event, input, taskId));
-        editInputElement.addEventListener('blur', () => handleBlur(input, taskId));
-    }
-
-    function handleEditKeyDown(event, input, taskId) {
-        switch (event.key) {
-            case 'Enter':
-                saveTaskText(input, taskId);
-                input.blur();
-                break;
-            case 'Escape':
+    function addEventListenersForEdit(editInputElement, taskTextElement, originalText, taskId) {
+        editInputElement.addEventListener('keydown', async (event) => {
+            if (event.key === 'Enter') {
+                await saveTaskText(editInputElement, taskId);
+                editInputElement.remove();
+                taskTextElement.style.display = 'block';
+            } else if (event.key === 'Escape') {
                 escapePressed = true;
-                input.remove();
+                editInputElement.remove();
+                taskTextElement.style.display = 'block';
                 tasksRender(tasks);
-                break;
-        }
-    }
-
-    function handleBlur(input, taskId) {
-        if (!escapePressed) {
-            saveTaskText(input, taskId);
-        }
-        escapePressed = false;
-        tasksRender(tasks);
-    }
-
-    function saveTaskText(input, taskId) {
-        tasks.forEach((item) => {
-            if (item.id === taskId) {
-                item.text = input.value;
             }
         });
+
+        editInputElement.addEventListener('blur', async () => {
+            if (!escapePressed) {
+                await saveTaskText(editInputElement, taskId);
+            }
+            editInputElement.remove();
+            taskTextElement.style.display = 'block';
+            escapePressed = false;
+            tasksRender(tasks);
+        });
+    }
+
+    async function saveTaskText(input, taskId) {
+        const newText = input.value;
+        const task = tasks.find(task => task.id === taskId);
+
+        if (task && task.text !== newText) {
+            task.text = newText;
+
+            try {
+                const response = await fetch(`http://localhost:3000/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: newText })
+                });
+                if (!response.ok) {
+                    console.error('Error updating task:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error updating task:', error);
+            }
+        }
     }
 
   
@@ -231,7 +229,6 @@
         currentPage = totalPages;
         tasksRender(tasks);
     }
-
     function changeTaskStatus(id, list) {
         const task = list.find(task => task.id === Number(id));
         if (task) {
@@ -239,6 +236,18 @@
             const allComplete = tasks.length > 0 && tasks.every(task => task.isComplete);
             allCheckBox.checked = allComplete;
             tasksRender(list);
+
+            try {
+                fetch(`http://localhost:3000/tasks/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ isComplete: task.isComplete })
+                });
+            } catch (error) {
+                console.error('Ошибка обновления статуса', error);
+            }
         }
     }
 
@@ -247,6 +256,18 @@
 
         tasks.forEach(task => {
             task.isComplete = allComplete;
+
+            try {
+                fetch(`http://localhost:3000/tasks/${task.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ isComplete: task.isComplete })
+                });
+            } catch (error) {
+                console.error('Ошибка обновления всех статусов', error);
+            }
         });
 
         tasksRender(tasks);
@@ -276,17 +297,16 @@
                 tasksRender(tasks);
             }
         } catch (error) {
-            console.error('Error deleting task:', error);
+            console.error('Ошибка удаления', error);
         }
         updateCheckAllStatus();
     }
 
-    function deleteCompletedTasks() {
-        const filteredTasks = tasks.filter(task => !task.isComplete);
-        tasks.length = 0;
-        tasks.push(...filteredTasks);
-        tasksRender(tasks);
-        updateCheckAllStatus()
+    async function deleteCompletedTasks() {
+        const completedTasks = tasks.filter(task => task.isComplete);
+        for (const task of completedTasks) {
+            await deleteTask(task.id);
+        }
     }
 
     function changeOrDel(event) {
